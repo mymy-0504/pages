@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="zh-TW" data-theme="rose">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<!-- 要換：頁面標題、分享時顯示的描述 -->
+<title>家庭收支管理表｜張麥麥</title>
+<meta name="description" content="手機填寫家庭收入、開銷與預留款，自動算出每月結餘和可自由運用金額。">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@600;700;900&family=Noto+Sans+TC:wght@300;400;500;700;900&family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ── 版型：沿用 2026-08-06-chatgpt-setup／2026-10-01-7-habits 的米色＋金橘 ── */
+:root{
+  --gold:#D4902A; --gold-bright:#E8A94A; --gold-dim:rgba(var(--a-rgb),0.30);
+  --bg:#F4F1EA; --bg2:#FBF8F2; --card:#FFFFFF; --card2:#FAF6EE;
+  --code:#12161f; --code-tx:#e6eaf2;
+  --text:#2c2a26; --dim:#6d6a62; --faint:#a8a39a; --ink:#2a2620;
+  --line:rgba(0,0,0,0.12);
+  --ok:#4a7c3f; --ok-bg:rgba(74,124,63,0.07); --ok-line:rgba(74,124,63,0.25);
+  --no:#b1431f; --no-bg:rgba(200,70,40,0.06); --no-line:rgba(200,70,40,0.22);
+  --dark:linear-gradient(160deg,#15110b 0%,#241a0e 100%);
+  --r-md:16px; --r-lg:22px; --pill:50px;
+  --bounce:400ms cubic-bezier(0.34,1.56,0.64,1);
+  --a-rgb:212,144,42; --sh-rgb:120,90,30; --bg-rgb:244,241,234; --on-accent:#1a1406;
+  --serif:"Noto Serif TC",serif; --sans:"Noto Sans TC","Inter",sans-serif; --mono:"JetBrains Mono",monospace;
+}
+/* ── 配色：改 <html data-theme="…"> 就會換。gold 米金／green 墨綠／navy 海軍藍／rose 乾燥玫瑰 ── */
+html[data-theme="green"]{--gold:#3F7D5C;--gold-bright:#5B9A77;--a-rgb:63,125,92;--bg:#EEF2EC;--bg2:#F7F9F5;--card2:#F3F6F1;--bg-rgb:238,242,236;--sh-rgb:40,70,50;--ink:#1f2a24;--on-accent:#ffffff;}
+html[data-theme="navy"]{--gold:#2F5D8C;--gold-bright:#4A7AAA;--a-rgb:47,93,140;--bg:#EDF1F5;--bg2:#F7F9FB;--card2:#F2F5F9;--bg-rgb:237,241,245;--sh-rgb:30,50,80;--ink:#1d2632;--on-accent:#ffffff;}
+html[data-theme="rose"]{--gold:#B5656B;--gold-bright:#C98389;--a-rgb:181,101,107;--bg:#F6EFEE;--bg2:#FBF7F6;--card2:#F8F1F0;--bg-rgb:246,239,238;--sh-rgb:110,60,60;--ink:#2e2324;--on-accent:#ffffff;}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{font-family:var(--sans);color:var(--text);line-height:1.85;overflow-x:hidden;background:var(--bg);
+  background-image:radial-gradient(118% 54% at 50% 0%, rgba(var(--a-rgb),0.16) 0%, rgba(var(--a-rgb),0.05) 34%, rgba(var(--bg-rgb),0) 62%);
+  background-attachment:fixed;}
+.glow{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;}
+.g1{position:absolute;width:min(60vw,680px);height:min(60vw,680px);border-radius:50%;background:radial-gradient(circle, rgba(var(--a-rgb),0.13), rgba(var(--a-rgb),0));top:-18%;right:-14%;filter:blur(20px);}
+.g2{position:absolute;width:min(50vw,560px);height:min(50vw,560px);border-radius:50%;background:radial-gradient(circle, rgba(var(--a-rgb),0.12), rgba(var(--a-rgb),0));bottom:-14%;left:-12%;filter:blur(22px);}
+.wrap{max-width:720px;margin:0 auto;position:relative;}
+.js .fade{opacity:0;transform:translateY(28px);transition:opacity .6s ease,transform .6s ease;}
+.fade.vis{opacity:1;transform:translateY(0);}
+a{color:var(--gold);text-decoration:none;}
+.g{color:var(--gold);}
+
+/* ═════ ① 懸浮按鈕：電腦版掛右側、手機版浮在底部；滑到研究所介紹時自動收起 ═════ */
+.float-cta{position:fixed;z-index:40;transition:opacity .3s ease,transform .3s ease;}
+.float-cta.hide{opacity:0;pointer-events:none;}
+.fc-card{display:none;}
+.fc-pill{display:flex;align-items:center;justify-content:center;gap:8px;background:var(--gold);color:var(--on-accent);font-weight:900;font-size:15px;padding:14px 26px;border-radius:var(--pill);box-shadow:0 10px 28px rgba(var(--sh-rgb),0.32);white-space:nowrap;}
+.fc-pill .ar{transition:transform .2s;}
+.fc-pill:hover .ar{transform:translateX(3px);}
+/* 手機／平板：底部置中 */
+@media(max-width:1119px){
+  .float-cta{left:50%;bottom:calc(16px + env(safe-area-inset-bottom));transform:translateX(-50%);}
+  .float-cta.hide{transform:translate(-50%,20px);}
+  body{padding-bottom:84px;}
+}
+/* 電腦：右側卡片 */
+@media(min-width:1120px){
+  .float-cta{top:120px;right:max(24px,calc((100vw - 720px)/2 - 272px));width:240px;}
+  .float-cta.hide{transform:translateX(16px);}
+  .fc-pill{display:none;}
+  .fc-card{display:block;background:linear-gradient(165deg,var(--card) 0%,var(--card2) 100%);border:1px solid var(--gold-dim);border-left:3px solid var(--gold);border-radius:var(--r-md);padding:20px 20px 22px;box-shadow:0 10px 34px rgba(var(--sh-rgb),0.13);}
+  .fc-card .k{font-family:var(--mono);font-size:10px;letter-spacing:0.16em;color:var(--gold);margin-bottom:10px;font-weight:500;}
+  .fc-card h4{font-family:var(--serif);font-weight:900;font-size:17px;line-height:1.5;color:var(--ink);margin-bottom:9px;}
+  .fc-card p{font-size:12.5px;color:var(--dim);line-height:1.7;margin-bottom:16px;}
+  .fc-card a{display:block;text-align:center;background:var(--gold);color:var(--on-accent);font-weight:900;font-size:14px;padding:12px 14px;border-radius:var(--pill);box-shadow:0 6px 18px rgba(var(--a-rgb),0.26);transition:transform var(--bounce);}
+  .fc-card a:hover{transform:translateY(-2px);}
+}
+
+/* ═════ 開頭：只交代「這頁是什麼」，自介移到最下面 ═════ */
+.hero{position:relative;z-index:1;padding:60px 30px 36px;}
+.kicker{font-family:var(--mono);font-size:11px;letter-spacing:0.2em;color:var(--gold);margin-bottom:20px;font-weight:500;}
+.hero h1{font-family:var(--serif);font-weight:900;font-size:36px;line-height:1.36;margin-bottom:14px;color:var(--ink);}
+.hero .h-sub{font-family:var(--serif);font-weight:700;font-size:15px;color:var(--gold);margin-bottom:14px;}
+.hero-sub{font-size:15px;color:var(--dim);line-height:1.85;margin-bottom:24px;}
+/* 這頁有什麼：數字跟單位寫在一起，點了直接跳到那一段 */
+.toc{margin-bottom:24px;}
+.toc .tt{font-size:12px;font-weight:700;color:var(--dim);letter-spacing:0.05em;margin-bottom:8px;}
+.toc ul{list-style:none;display:flex;flex-wrap:wrap;gap:8px;}
+.toc a{display:inline-flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--gold-dim);border-radius:var(--pill);padding:7px 15px;font-size:14px;font-weight:700;color:var(--ink);transition:border-color .2s;}
+.toc a:hover{border-color:var(--gold);}
+.toc a b{font-family:"Inter";font-weight:800;color:var(--gold);}
+.toc a i{font-style:normal;color:var(--gold);font-size:12px;}
+/* 自介卡：全站固定。上面一句是對讀者的承諾，下面是證明 */
+.mid-intro{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--gold);border-radius:var(--r-md);padding:16px 20px;margin-bottom:24px;}
+.mid-intro .slogan{font-family:var(--serif);font-weight:900;font-size:min(18px,4vw);white-space:nowrap;line-height:1.45;color:var(--ink);margin-top:12px;}
+
+.mid-intro .who{display:flex;align-items:center;gap:14px;}
+.mid-intro .who img{width:76px;height:76px;border-radius:50%;object-fit:cover;border:2px solid var(--gold);}
+.mid-intro .nm{font-weight:900;font-size:16px;line-height:1.3;color:var(--ink);}
+.mid-intro .tt2{font-size:12px;color:var(--dim);line-height:1.4;}
+.mid-intro .proof{display:flex;align-items:flex-end;gap:14px;border-top:1px dashed var(--line);margin-top:12px;padding-top:11px;}
+.mid-intro .num{flex-shrink:0;line-height:1.2;}
+.mid-intro .num .d{font-size:11px;color:var(--dim);}
+.mid-intro .num .v{font-family:"Inter";font-weight:800;font-size:18px;color:var(--gold);white-space:nowrap;}
+.mid-intro .txt{font-size:14.5px;line-height:1.6;color:var(--text);padding-left:14px;border-left:1px solid var(--line);}
+.mid-intro .txt b{color:var(--ink);}
+.m-br{display:none;}
+
+/* ═════ ② 乾貨區 ═════ */
+.sec{position:relative;z-index:1;padding:38px 30px;border-top:1px solid var(--line);}
+.sec-tag{display:inline-block;background:rgba(var(--a-rgb),0.14);color:var(--gold);font-size:12px;font-weight:700;padding:5px 15px;border:1px solid var(--gold-dim);border-radius:var(--pill);margin-bottom:16px;letter-spacing:0.05em;}
+.sec h2{font-family:var(--serif);font-weight:900;font-size:24px;line-height:1.42;margin-bottom:14px;color:var(--ink);}
+.sec>p{font-size:15px;color:var(--text);line-height:1.9;margin-bottom:14px;}
+.tipline{font-size:13.5px;color:var(--dim);line-height:1.75;border-left:2px solid var(--gold-dim);padding-left:14px;margin:13px 0 2px;}
+.tipline b{color:var(--gold);}
+
+.tblwrap{overflow-x:auto;margin:12px 0 4px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--card);}
+.tbl{width:100%;border-collapse:collapse;font-size:13.5px;}
+.tbl th{background:rgba(var(--a-rgb),0.12);color:var(--gold);font-weight:700;text-align:left;padding:10px 13px;border-bottom:2px solid var(--gold-dim);white-space:nowrap;}
+.tbl td{padding:10px 13px;border-bottom:1px solid var(--line);vertical-align:top;line-height:1.6;}
+.tbl td:first-child{font-family:"Inter";font-weight:800;color:var(--gold);}
+.tbl td:nth-child(2){font-weight:700;color:var(--ink);white-space:nowrap;}
+.tbl tr:last-child td{border-bottom:none;}
+
+.acc{display:flex;flex-direction:column;gap:10px;}
+details.ch{background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);overflow:hidden;}
+details.ch[open]{border-color:var(--gold-dim);box-shadow:0 4px 18px rgba(var(--sh-rgb),0.07);}
+details.ch summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:13px;padding:16px 18px;user-select:none;}
+details.ch summary::-webkit-details-marker{display:none;}
+.ch-n{flex-shrink:0;min-width:34px;height:30px;border-radius:8px;background:rgba(var(--a-rgb),0.14);border:1px solid var(--gold-dim);color:var(--gold);font-family:var(--mono);font-size:12px;display:flex;align-items:center;justify-content:center;}
+.ch-t{flex:1;font-weight:700;font-size:14.5px;line-height:1.4;}
+.ch-t .en{font-weight:400;color:var(--dim);font-size:12.5px;}
+.ch-mk{flex-shrink:0;width:22px;height:22px;position:relative;}
+.ch-mk::before,.ch-mk::after{content:"";position:absolute;background:var(--gold);border-radius:2px;transition:transform .25s ease,opacity .25s;}
+.ch-mk::before{top:10px;left:4px;width:14px;height:2px;}
+.ch-mk::after{top:4px;left:10px;width:2px;height:14px;}
+details.ch[open] .ch-mk::after{transform:rotate(90deg);opacity:0;}
+.ch-body{padding:6px 18px 18px;border-top:1px solid var(--line);}
+.ch-body p{font-size:14px;line-height:1.82;margin:10px 0;}
+.pos{background:rgba(var(--a-rgb),0.08);border:1px solid var(--gold-dim);border-radius:12px;padding:11px 14px;margin:10px 0 2px;font-size:13.6px;line-height:1.72;}
+.pos b{color:var(--gold);}
+.judge{border-radius:12px;padding:11px 14px;margin:7px 0;font-size:13.6px;line-height:1.72;}
+.judge.no{background:var(--no-bg);border:1px solid var(--no-line);color:#7a3320;}
+.judge.ok{background:var(--ok-bg);border:1px solid var(--ok-line);color:#2f5228;}
+.judge .jl{font-weight:700;font-size:11.5px;letter-spacing:0.05em;display:block;margin-bottom:2px;}
+.judge.no .jl{color:var(--no);}
+.judge.ok .jl{color:var(--ok);}
+
+.cp{background:var(--code);border:2px solid var(--gold);border-radius:var(--r-md);padding:16px;margin:12px 0 2px;position:relative;box-shadow:0 10px 34px rgba(var(--sh-rgb),0.16);}
+.cp .pl{font-family:var(--mono);font-size:10.5px;letter-spacing:0.08em;color:var(--gold-bright);margin-bottom:11px;max-width:calc(100% - 96px);}
+.cp pre{font-family:var(--mono);font-size:12px;line-height:1.85;color:var(--code-tx);white-space:pre-wrap;word-break:break-word;}
+.cp .ph{color:var(--gold-bright);}
+.copy-btn{position:absolute;top:11px;right:11px;background:var(--gold);border:1px solid var(--gold);color:var(--on-accent);font-family:var(--sans);font-size:12px;font-weight:700;padding:7px 16px;border-radius:50px;cursor:pointer;}
+
+.ck{display:flex;gap:11px;align-items:flex-start;padding:9px 0;cursor:pointer;border-bottom:1px dashed var(--line);}
+.ck:last-of-type{border-bottom:none;}
+.ck input{appearance:none;-webkit-appearance:none;flex-shrink:0;width:19px;height:19px;margin-top:4px;border:2px solid var(--gold-dim);border-radius:5px;background:var(--bg2);cursor:pointer;position:relative;transition:all .18s;}
+.ck input:checked{background:var(--gold);border-color:var(--gold);}
+.ck input:checked::after{content:"";position:absolute;left:5px;top:1px;width:5px;height:10px;border:solid var(--on-accent);border-width:0 2.5px 2.5px 0;transform:rotate(45deg);}
+.ck span{font-size:14.5px;line-height:1.7;}
+.ck input:checked + span{color:var(--faint);text-decoration:line-through;}
+.cklist{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--gold);border-radius:var(--r-md);padding:8px 18px;}
+
+/* ═════ ③ 研究所介紹：跟上面同一套米色＋白卡，不另外換成深色 ═════ */
+.inst{position:relative;z-index:1;padding:44px 30px 40px;border-top:1px solid var(--line);}
+.inst .kk{display:inline-block;background:rgba(var(--a-rgb),0.14);color:var(--gold);font-size:12px;font-weight:700;padding:5px 15px;border:1px solid var(--gold-dim);border-radius:var(--pill);margin-bottom:16px;letter-spacing:0.05em;}
+.inst h2{font-family:var(--serif);font-weight:900;font-size:24px;line-height:1.42;margin-bottom:16px;color:var(--ink);}
+.inst h2 .g{color:var(--gold);}
+.inst .lead{font-family:var(--serif);font-weight:700;font-size:16.5px;line-height:1.7;color:var(--ink);margin-bottom:16px;padding-left:14px;border-left:3px solid var(--gold);}
+.founder{margin-bottom:24px;}
+.founder p{font-size:14.5px;line-height:1.9;color:var(--text);margin-bottom:10px;}
+.founder p b{color:var(--gold);}
+.big{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:0 0 30px;}
+.big .b{background:var(--card);border:1px solid var(--line);border-top:3px solid var(--gold);border-radius:var(--r-md);padding:16px 10px;text-align:center;}
+.big .bn{font-family:"Inter";font-weight:800;font-size:24px;color:var(--gold);line-height:1.1;}
+.big .bl{font-size:12px;color:var(--dim);margin-top:6px;line-height:1.5;}
+.inst h3{font-family:var(--serif);font-weight:900;font-size:18px;margin:6px 0 14px;color:var(--ink);}
+.tools{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:30px;}
+.tool{background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);padding:16px;}
+.tool.main{grid-column:1 / -1;border-color:var(--gold-dim);border-left:3px solid var(--gold);background:linear-gradient(165deg,var(--card) 0%,var(--card2) 100%);}
+.tool .tn{font-weight:900;font-size:15px;color:var(--ink);margin-bottom:4px;}
+.tool .tn em{font-style:normal;font-size:11px;font-weight:700;color:var(--on-accent);background:var(--gold);border-radius:50px;padding:1px 8px;margin-left:6px;vertical-align:2px;}
+.tool .tn em.soon{background:rgba(0,0,0,0.08);color:var(--dim);}
+.tool .td{font-size:13px;color:var(--dim);line-height:1.7;}
+.qa{background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);padding:4px 18px 16px;margin-bottom:30px;}
+.qa .q{font-family:var(--serif);font-weight:700;font-size:15px;color:var(--ink);margin:14px 0 4px;}
+.qa .q::before{content:"Q";color:var(--gold);font-family:"Inter";font-weight:800;margin-right:8px;}
+.qa .a{font-size:13.8px;color:var(--dim);line-height:1.8;}
+.fit .f{display:flex;gap:10px;font-size:14px;line-height:1.7;margin-bottom:9px;color:var(--text);}
+.fit .f::before{content:"\2714";color:var(--gold);font-weight:700;flex-shrink:0;}
+.btn-wrap{text-align:center;margin-top:30px;background:linear-gradient(165deg,var(--card) 0%,var(--card2) 100%);border:1px solid var(--gold-dim);border-radius:var(--r-lg);padding:26px 18px;}
+.skbtn{display:inline-flex;align-items:center;gap:8px;background:var(--gold);color:var(--on-accent);border-radius:var(--pill);padding:17px 46px;font-weight:900;font-size:18px;box-shadow:0 8px 28px rgba(var(--a-rgb),0.30);transition:transform var(--bounce);position:relative;overflow:hidden;}
+.skbtn:hover{transform:translateY(-3px);}
+.skbtn::after{content:'';position:absolute;top:0;left:-100%;width:50%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.45),transparent);transform:skewX(-25deg);animation:shine 3.4s ease-in-out infinite;}
+@keyframes shine{0%{left:-100%;}22%{left:160%;}100%{left:160%;}}
+.btn-note{margin-top:14px;font-size:12.5px;color:var(--dim);}
+
+.footer{position:relative;z-index:1;border-top:1px solid var(--line);padding:22px 30px 40px;text-align:center;}
+.footer .fa{font-style:italic;font-size:14px;color:var(--gold);font-weight:700;}
+.footer .fc{font-size:11px;color:var(--faint);margin-top:8px;line-height:1.7;}
+
+/* ── 手機版 ── */
+@media(max-width:600px){
+  .hero{padding:40px 20px 28px;}
+  .hero h1{font-size:28px;}
+  .sec{padding:32px 20px;}
+  .sec h2{font-size:21px;}
+  .mid-intro .proof{flex-direction:column;align-items:flex-start;gap:6px;}
+  .mid-intro .num{display:flex;align-items:baseline;gap:8px;}
+  .mid-intro .num .d{font-size:13px;}
+  .mid-intro .txt{padding-left:0;border-left:none;}
+  .m-br{display:inline;}
+  .tbl{font-size:13px;}
+  .tbl th,.tbl td{padding:10px 10px;}
+  details.ch summary{padding:15px 16px;align-items:flex-start;}
+  .ch-t .en{display:block;margin-top:3px;}
+  .ch-mk{margin-top:4px;}
+  .inst{padding:34px 20px 32px;}
+  .inst h2{font-size:21px;}
+  .founder p{font-size:min(14.5px,calc((100vw - 40px) / 26.5));}
+  .big .bn{font-size:20px;}
+  .tools{grid-template-columns:1fr;}
+  .skbtn{font-size:16px;padding:15px 26px;white-space:nowrap;}
+  .footer{padding:20px 20px 36px;}
+}
+
+/* ── 總覽頁：搜尋框＋卡片 ── */
+.find{width:100%;font:inherit;font-size:15px;padding:13px 18px;border:1px solid var(--gold-dim);border-radius:var(--pill);background:var(--card);color:var(--text);outline:none;margin-bottom:6px;}
+.find:focus{border-color:var(--gold);}
+.cards{display:flex;flex-direction:column;gap:10px;}
+a.card{display:block;background:var(--card);border:1px solid var(--line);border-left:3px solid var(--gold);border-radius:var(--r-md);padding:15px 18px;color:var(--text);transition:transform .2s,border-color .2s;}
+a.card:hover{transform:translateX(3px);border-color:var(--gold);}
+a.card .t{font-weight:900;font-size:15.5px;color:var(--ink);line-height:1.5;}
+a.card .d{font-size:13px;color:var(--dim);line-height:1.65;margin-top:4px;}
+.empty{display:none;font-size:14px;color:var(--dim);padding:10px 2px;}
+
+/* 手機閱讀調整：固定字級、自然換行、表格改為卡片 */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%;}
+.mid-intro .slogan{white-space:normal;overflow-wrap:anywhere;}
+@media(max-width:600px){
+ body{font-size:16px;line-height:1.85;}
+ .hero{padding:32px 20px 24px;}
+ .hero h1{font-size:28px;line-height:1.5;overflow-wrap:anywhere;}
+ .hero .h-sub,.hero-sub,.sec>p,.founder p,.ch-body p,.qa .a,.tool .td,.fit .f,.ck span,.mid-intro .txt,.pos,.judge{font-size:16px;line-height:1.85;}
+ .sec,.inst{padding:30px 20px;}
+ .sec h2,.inst h2{font-size:23px;line-height:1.55;}
+ .inst h3{font-size:19px;line-height:1.6;}
+ .mid-intro{padding:18px 16px;}
+ .mid-intro .slogan{font-size:18px;line-height:1.75;}
+ .mid-intro .who{gap:12px;align-items:center;}
+ .mid-intro .who img{width:64px;height:64px;flex-shrink:0;}
+ .mid-intro .who>div{min-width:0;}
+ .mid-intro .nm{font-size:16px;line-height:1.65;}
+ .mid-intro .tt2{font-size:14px;line-height:1.7;}
+ .mid-intro .proof{gap:12px;align-items:stretch;}
+ .mid-intro .num{flex-wrap:wrap;gap:8px;}
+ .mid-intro .num .d{font-size:14px;}
+ .mid-intro .num .v{font-size:20px;}
+ .mid-intro .txt{padding:0;}
+ .toc ul{display:grid;grid-template-columns:1fr;gap:8px;}
+ .toc a{display:flex;justify-content:space-between;width:100%;min-height:48px;font-size:16px;padding:11px 16px;}
+ .tblwrap{border:0;background:transparent;overflow:visible;margin:16px 0;}
+ .tbl,.tbl tbody,.tbl tr,.tbl td{display:block;width:100%;}
+ .tbl thead{display:none;}
+ .tbl tbody{display:grid;gap:12px;}
+ .tbl tr{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;}
+ .tbl td,.tbl td:nth-child(2){font-family:var(--sans);white-space:normal;overflow-wrap:anywhere;font-weight:400;font-size:16px;line-height:1.85;padding:10px 0;border:0;border-bottom:1px dashed var(--line);}
+ .tbl td:first-child{padding-top:0;font-size:17px;font-weight:700;color:var(--ink);}
+ .tbl td:last-child{padding-bottom:0;border-bottom:0;}
+ .tbl td::before{content:attr(data-label);display:block;color:var(--gold);font-weight:700;font-size:13px;line-height:1.6;margin-bottom:4px;}
+ .tbl td:first-child::before{display:none;}
+ .ch-t{font-size:16px;line-height:1.7;min-width:0;}
+ details.ch summary{padding:16px 14px;gap:10px;}
+ .ch-body{padding:6px 16px 18px;}
+ .ch-n{min-width:28px;}
+ .cp{padding:16px;}
+ .cp .pl{font-family:var(--sans);font-size:14px;line-height:1.7;max-width:none;padding-right:0;margin-bottom:12px;}
+ .copy-btn{position:static;display:block;min-height:44px;font-size:14px;margin-bottom:14px;padding:9px 20px;}
+ .cp pre{font-family:var(--sans);font-size:15px;line-height:1.9;overflow-wrap:anywhere;white-space:pre-wrap;}
+ .cklist{padding:10px 16px;}
+ .ck{padding:12px 0;}
+ .ck input{width:22px;height:22px;}
+ .tool,.qa{padding-left:16px;padding-right:16px;}
+ .tool .tn,.qa .q{font-size:17px;line-height:1.7;}
+ .inst .lead{font-size:18px;line-height:1.8;}
+ .btn-wrap{padding:24px 16px;}
+ .skbtn{display:flex;justify-content:center;width:100%;font-size:16px;line-height:1.65;padding:14px 12px;white-space:normal;}
+ .btn-note{font-size:14px;line-height:1.85;text-align:left;}
+ .float-cta{width:calc(100% - 40px);max-width:420px;}
+ .fc-pill{font-size:16px;padding:14px 12px;white-space:normal;text-align:center;line-height:1.6;}
+ .tipline{font-size:14px;line-height:1.8;overflow-wrap:anywhere;}
+ a.card .t{font-size:18px;line-height:1.7;}
+ a.card .d{font-size:16px;line-height:1.8;}
+ .find{font-size:16px;min-height:48px;}
+ .footer .fa{font-size:15px;}
+ .footer .fc{font-size:13px;}
+ .sec,.inst,.mid-intro,.tool,.qa,.cp,.btn-wrap{min-width:0;overflow-wrap:anywhere;}
+}
+
+
+/* 財商觀念與真實案例：手機優先 */
+.money-intro{font-size:16px;line-height:1.9;margin-bottom:20px;}
+.money-paths{display:grid;gap:18px;}
+.money-path{border:1px solid var(--line);border-radius:20px;background:var(--card);padding:22px 18px;min-width:0;}
+.money-path.asset{border-color:var(--gold-dim);background:var(--card2);}
+.money-path h3{font-size:20px;line-height:1.6;margin:8px 0 12px;}
+.money-label{font-size:13px;color:var(--gold);font-weight:700;letter-spacing:.05em;}
+.car-art{display:block;width:100%;max-width:300px;height:auto;margin:12px auto;}
+.money-flow{display:grid;gap:8px;text-align:center;margin:18px 0;}
+.money-step{padding:13px 12px;background:var(--bg2);border:1px solid var(--line);border-radius:12px;font-size:16px;line-height:1.7;}
+.money-arrow{color:var(--gold);font-size:22px;line-height:1;}
+.money-result{padding:16px;border-left:3px solid var(--gold);background:rgba(var(--a-rgb),.07);border-radius:0 12px 12px 0;}
+.money-result b{display:block;font-size:19px;line-height:1.7;margin-bottom:6px;}
+.money-path p,.money-result p,.case-story,.case-card p,.finance-invite p{font-size:16px;line-height:1.9;}
+.money-note{font-size:14px;line-height:1.85;color:var(--dim);margin-top:18px;}
+.case-story{margin-bottom:22px;}
+.case-compare{display:grid;gap:14px;}
+.case-card{padding:22px 18px;border:1px solid var(--line);border-radius:18px;background:var(--card);}
+.case-card.after{background:var(--card2);border-color:var(--gold-dim);}
+.case-card h3{font-size:17px;line-height:1.7;}
+.case-number{font-family:var(--sans);font-size:34px;line-height:1.4;font-weight:900;color:var(--gold);margin:8px 0;}
+.case-meter{height:16px;background:rgba(var(--a-rgb),.12);border-radius:12px;overflow:hidden;margin:16px 0 8px;}
+.case-meter span{display:block;height:100%;background:var(--gold);border-radius:12px;}
+.case-caption{font-size:14px;line-height:1.8;color:var(--dim);}
+.case-shift{text-align:center;color:var(--gold);font-size:15px;font-weight:700;padding:4px;}
+.case-held{display:flex;gap:12px;align-items:center;padding:16px;margin-top:18px;background:var(--card);border:1px solid var(--line);border-radius:14px;font-size:16px;line-height:1.8;}
+.case-held svg{width:40px;height:40px;flex-shrink:0;color:var(--gold);}
+.finance-invite{margin-top:24px;padding:22px 18px;border:1px solid var(--gold-dim);border-radius:18px;background:var(--card2);}
+.finance-invite h3{font-size:21px;line-height:1.6;margin-bottom:10px;}
+.finance-invite .skbtn{display:flex;justify-content:center;width:100%;font-size:16px;line-height:1.7;padding:14px 12px;white-space:normal;margin-top:18px;}
+@media(min-width:700px){.money-paths{grid-template-columns:1fr 1fr;}.case-compare{grid-template-columns:1fr auto 1fr;align-items:center;}.case-shift{max-width:72px;}}
+@media(max-width:600px){.money-paths,.case-compare{grid-template-columns:minmax(0,1fr);}.money-path,.case-card,.finance-invite{overflow-wrap:anywhere;}.case-number{font-size:32px;}}
+
+
+/* 家庭收支工具：手機優先 */
+.budget-controls{display:grid;gap:16px;margin-bottom:20px;}
+.budget-controls label{display:grid;gap:6px;font-size:16px;font-weight:700;}
+.budget-form input,.budget-form select,.budget-form textarea{font:inherit;font-size:16px;color:var(--ink);background:var(--card);border:1px solid var(--gold-dim);border-radius:10px;padding:12px;width:100%;min-width:0;min-height:48px;}
+.budget-form input:focus,.budget-form select:focus,.budget-form textarea:focus{outline:2px solid var(--gold);outline-offset:2px;}
+.budget-form input:invalid{border-color:var(--no);}
+.budget-group{border:1px solid var(--line);border-radius:18px;background:var(--card);margin:16px 0;overflow:hidden;}
+.budget-group>summary{font-size:18px;font-weight:700;padding:18px;cursor:pointer;min-height:56px;}
+.budget-group-body{padding:0 16px 18px;}
+.budget-row{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;padding:18px 0;border-top:1px dashed var(--line);}
+.row-name{font-size:16px;line-height:1.7;font-weight:700;overflow-wrap:anywhere;}
+.monthly-hint,.budget-small{font-size:14px;line-height:1.8;color:var(--dim);}
+.monthly-hint:empty{display:none;}
+.budget-add{display:grid;gap:8px;margin-top:16px;}
+.budget-action,.budget-text-button{font-family:var(--sans);font-size:16px;line-height:1.6;min-height:48px;border:1px solid var(--gold-dim);border-radius:12px;padding:12px 16px;cursor:pointer;white-space:normal;}
+.budget-action{background:var(--gold);color:var(--on-accent);font-weight:700;}
+.budget-text-button{background:var(--card);color:var(--gold);}
+.budget-totals{display:grid;gap:12px;}
+.budget-total{padding:20px;background:var(--card);border:1px solid var(--line);border-radius:18px;}
+.budget-total h3{font-size:16px;line-height:1.7;}
+.budget-value{font-size:30px;line-height:1.5;color:var(--gold);font-weight:900;overflow-wrap:anywhere;margin:8px 0;}
+.budget-result{background:var(--card2);border:2px solid var(--gold-dim);border-radius:18px;padding:20px;margin-top:20px;}
+.budget-result h3{font-size:18px;line-height:1.7;}
+.budget-result p{font-size:16px;line-height:1.9;}
+.budget-result.is-negative{border-color:var(--no-line);}
+.is-negative .budget-value{color:var(--no);}
+.budget-chart{margin:22px 0;display:grid;gap:18px;}
+.chart-caption{font-size:15px;line-height:1.8;margin-bottom:6px;}
+.chart-track{height:14px;border-radius:10px;background:rgba(var(--a-rgb),.1);overflow:hidden;}
+.chart-fill{display:block;height:100%;border-radius:10px;transition:width .25s;background:#b5656b;}
+.chart-fill.reserve{background:#8a7965;}.chart-fill.free{background:#527b65;}
+.budget-save{display:flex;align-items:flex-start;gap:10px;margin:20px 0 8px;font-size:16px;line-height:1.8;}
+.budget-save input{width:22px;height:22px;min-height:22px;flex-shrink:0;margin-top:4px;accent-color:var(--gold);}
+.budget-buttons{display:grid;gap:10px;margin:20px 0;}
+.budget-summary{min-height:340px;resize:vertical;line-height:1.85;}
+.budget-confirm{padding:18px;border:1px solid var(--no-line);border-radius:14px;margin:16px 0;}
+.budget-flow{display:grid;gap:10px;margin:18px 0;}
+.budget-flow-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;font-size:16px;line-height:1.9;}
+.budget-flow-card strong{display:block;color:var(--gold);margin-bottom:8px;}
+.budget-summary-link{display:block;margin:16px 0;font-size:16px;}
+[hidden]{display:none!important;}
+@media(min-width:620px){.budget-controls{grid-template-columns:1fr 1fr;}.budget-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr);}.row-name,.monthly-hint{grid-column:1/-1;}.budget-totals{grid-template-columns:repeat(3,minmax(0,1fr));}.budget-value{font-size:25px;}.budget-buttons{grid-template-columns:1fr 1fr;}}
+
+
+/* 用錢順序插畫流程：手機優先 */
+.order-stories{display:grid;gap:20px;margin:24px 0;}
+.order-story{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:22px 16px;min-width:0;}
+.order-story.planned{background:var(--card2);border:2px solid var(--gold-dim);}
+.order-eyebrow{font-size:13px;color:var(--gold);font-weight:700;line-height:1.7;}
+.order-story h3{font-size:21px;line-height:1.6;margin:6px 0 22px;color:var(--ink);}
+.order-step{display:flex;align-items:center;gap:14px;min-width:0;}
+.order-icon{width:76px;height:76px;flex-shrink:0;background:var(--bg2);border-radius:20px;}
+.order-step>div{min-width:0;}
+.order-step h4{font-size:17px;line-height:1.7;color:var(--ink);}
+.order-step p{font-size:16px;line-height:1.8;color:var(--dim);margin-top:3px;overflow-wrap:anywhere;}
+.order-arrow{font-size:24px;line-height:1.4;color:var(--gold);padding:7px 0 7px 27px;}
+.order-ending{font-size:16px;line-height:1.9;font-weight:700;border-top:1px dashed var(--gold-dim);margin-top:22px;padding-top:16px;color:var(--gold);}
+@media(min-width:700px){.order-stories{grid-template-columns:1fr 1fr;}.order-step{align-items:flex-start;}.order-icon{width:64px;height:64px;}.order-arrow{padding-left:22px;}}
+@media(max-width:360px){.order-icon{width:60px;height:60px;}.order-step{gap:10px;}.order-arrow{padding-left:20px;}}
+
+</style>
+</head>
+<body>
+<script>document.documentElement.className+=' js';</script>
+<div class="glow"><div class="g1"></div><div class="g2"></div></div>
+
+<!-- ═════ ① 懸浮按鈕：電腦版右側卡片、手機版底部按鈕。滑到最下面「關於我」時自動收起 ═════ -->
+<div class="float-cta" id="float-cta">
+  <a class="fc-pill" href="https://lin.ee/oyxzdTj" target="_blank" rel="noopener">加入官方line我本人親回 <span class="ar">→</span></a>
+  <div class="fc-card">
+    <div class="k">NEXT STEP</div>
+    <h4>先看懂家庭收支<br><span class="g">再安排下一步</span></h4>
+    <p>這頁先幫你整理家庭收支。如果你想討論每月結餘、房貸壓力或資產安排，加入官方 LINE，跟我說你最想釐清的一件事。</p>
+    <a href="https://lin.ee/oyxzdTj" target="_blank" rel="noopener">加入官方line我本人親回</a>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- ═════ 開頭：這頁是什麼 ═════ -->
+<header class="hero"><div class="kicker">FAMILY BUDGET · 家庭收支工具</div><h1>家庭收支管理表<br><span class="g">看清每月還剩多少</span></h1><div class="h-sub">每個月忙著付錢，你還剩多少給自己？</div><p class="hero-sub">不用先懂理財，從填入家裡每月的收入與支出開始。不確定的金額可以先估算，再慢慢補齊。</p><div class="mid-intro"><div class="who">
+        <img src="data:image/jpeg;base64,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" alt="張麥麥">
+        <div><div class="nm">張麥麥<br>@mymy_0504</div><div class="tt2">生活優化顧問｜影響力創業家</div></div>
+      </div></div><nav class="toc"><div class="tt">這頁有</div><ul><li><a href="#budget-fill">填寫家庭收支 <i>↓</i></a></li><li><a href="#budget-totals">看懂剩餘金額 <i>↓</i></a></li><li><a href="#budget-order">重新安排用錢順序 <i>↓</i></a></li></ul></nav><a class="budget-summary-link" href="index.html">← 回到張麥麥資源總覽</a></header><noscript><div class="pos">這份表需要啟用 JavaScript 才能填寫與自動計算。</div></noscript>
+<div class="budget-form" id="budget-tool">
+<section class="sec" id="budget-fill"><span class="sec-tag">01 · 先看錢從哪裡來</span><h2>這個月，家裡進來多少錢？</h2><p>金額以新台幣計算。空白先當作 0；請使用實際入帳金額，不要填信用卡額度或借款。</p><div class="budget-controls"><label for="budget-month">記錄月份<input id="budget-month" type="month"></label><label for="budget-scope">這次整理的範圍<select id="budget-scope"><option value="家用帳">共同家用帳</option><option value="全家收支">全家完整收支</option></select></label></div><div class="pos">記錄共同家用帳時，填你們實際投入家用的金額；記錄全家收支時，填全家收入與全家支出。伴侶薪水與轉入的家用不要重複計算。月份只是這份表的標記，不是多月份帳本。</div><details class="budget-group" open><summary>家庭收入</summary><div class="budget-group-body"><div id="rows-income"></div><div class="budget-add"><label for="new-income" class="budget-small">新增自己的項目</label><input id="new-income" type="text" maxlength="60" placeholder="例如：其他家庭收入項目"><button class="budget-text-button" type="button" data-add-group="income">＋ 新增項目</button></div></div></details>
+</section>
+<section class="sec" id="budget-expenses"><span class="sec-tag">02 · 看見每一筆開銷</span><h2>家裡的錢，都花在哪裡？</h2><p>每月費用直接填；年繳或季繳費用，輸入整筆金額再選週期，就會換算每月應預留多少。</p><div class="pos">同一筆錢只記一次。信用卡消費已列入伙食、採買等分類，就不要再加整張卡費；非每月帳單採每月預留估算，也不要同時重複記入當月整筆帳單。</div><details class="budget-group" open><summary>住家與帳單</summary><div class="budget-group-body"><div id="rows-home"></div><div class="budget-add"><label for="new-home" class="budget-small">新增自己的項目</label><input id="new-home" type="text" maxlength="60" placeholder="例如：其他住家與帳單項目"><button class="budget-text-button" type="button" data-add-group="home">＋ 新增項目</button></div></div></details><details class="budget-group" open><summary>日常生活</summary><div class="budget-group-body"><div id="rows-living"></div><div class="budget-add"><label for="new-living" class="budget-small">新增自己的項目</label><input id="new-living" type="text" maxlength="60" placeholder="例如：其他日常生活項目"><button class="budget-text-button" type="button" data-add-group="living">＋ 新增項目</button></div></div></details><details class="budget-group" open><summary>孩子與家人</summary><div class="budget-group-body"><div id="rows-family"></div><div class="budget-add"><label for="new-family" class="budget-small">新增自己的項目</label><input id="new-family" type="text" maxlength="60" placeholder="例如：其他孩子與家人項目"><button class="budget-text-button" type="button" data-add-group="family">＋ 新增項目</button></div></div></details><details class="budget-group" open><summary>保險與其他還款</summary><div class="budget-group-body"><div id="rows-debt"></div><div class="budget-add"><label for="new-debt" class="budget-small">新增自己的項目</label><input id="new-debt" type="text" maxlength="60" placeholder="例如：其他保險與其他還款項目"><button class="budget-text-button" type="button" data-add-group="debt">＋ 新增項目</button></div></div></details><p class="budget-small">這是每月預算估算表，不是銀行帳戶餘額。若帳單近期就要繳，還要確認目前手上的存款足夠支付。</p></section>
+<section class="sec" id="budget-totals"><span class="sec-tag">03 · 看懂開銷後結餘</span><h2>算完後，你看見什麼？</h2><p id="budget-completeness" class="budget-small"></p><div class="budget-totals"><article class="budget-total"><h3>家庭總收入</h3><div id="total-income" class="budget-value">0 元</div><p class="budget-small">已填收入換算成每月合計。</p></article><article class="budget-total"><h3>家庭支出與帳單預留</h3><div id="total-expenses" class="budget-value">0 元</div><p class="budget-small">日常開銷、還款與非每月帳單預留。</p></article><article class="budget-total"><h3 id="balance-title">開銷後結餘</h3><div id="total-balance" class="budget-value">0 元</div><p class="budget-small">家庭總收入減去上述支出。</p></article></div></section>
+<section class="sec" id="budget-allocation"><span class="sec-tag">04 · 先留給未來的自己</span><h2>剩下的錢，你想先留給什麼？</h2><p>填寫每月想預留的緊急備用金、儲蓄與家庭目標。已有投資安排再填，沒有可以留白；預留金額不代表投資建議。</p><details class="budget-group" open><summary>先留給未來的自己</summary><div class="budget-group-body"><div id="rows-reserve"></div><div class="budget-add"><label for="new-reserve" class="budget-small">新增自己的項目</label><input id="new-reserve" type="text" maxlength="60" placeholder="例如：其他先留給未來的自己項目"><button class="budget-text-button" type="button" data-add-group="reserve">＋ 新增項目</button></div></div></details>
+<div class="budget-result" id="budget-result"><h3 id="available-title">可自由運用金額</h3><div id="total-available" class="budget-value">0 元</div><p>已扣除儲蓄與目標預留：<strong id="total-reserve">0 元</strong></p><p id="result-message" role="status" aria-live="polite"></p></div><div class="budget-chart" id="budget-chart" aria-label="每月收支金額比較圖"></div><p class="budget-small" id="chart-note"></p>
+<label class="budget-save"><input id="save-budget" type="checkbox"><span>只儲存在這台裝置，下次繼續填</span></label><p class="budget-small">預設不保存，不會將填寫內容傳給張麥麥或自動送到 LINE。開啟後會儲存在此瀏覽器；共用裝置請勿勾選。清除網站資料或使用無痕模式，可能無法保留。</p><p id="save-status" class="budget-small" role="status"></p>
+<div class="budget-buttons"><button id="copy-budget" class="budget-action" type="button">複製我的收支摘要</button><button id="reset-budget" class="budget-text-button" type="button">清空重填</button></div><p id="copy-status" role="status" class="budget-small"></p><div id="summary-box" hidden><label for="summary-output">你的收支摘要（可選取複製）</label><textarea id="summary-output" class="budget-summary" readonly></textarea></div><div id="reset-confirm" class="budget-confirm" hidden><p>要清空這份表嗎？金額、自訂項目與本機備份都會移除。</p><div class="budget-buttons"><button id="cancel-reset" class="budget-text-button" type="button">保留，繼續填寫</button><button id="confirm-reset" class="budget-action" type="button">確認清空</button></div></div>
+</section></div>
+<section class="sec" id="budget-order"><span class="sec-tag">05 · 用錢的順序</span><h2>錢進來後<br><span class="g">你先安排什麼？</span></h2><div class="order-stories"><article class="order-story"><div class="order-eyebrow">你可能熟悉的方式</div><h3>先花，再看剩多少</h3><div class="order-step"><svg viewBox="0 0 96 96" aria-hidden="true" class="order-icon"><rect x="14" y="25" width="68" height="46" rx="10" fill="#b5656b"/><path d="M14 38h68" stroke="#f8efeb" stroke-width="4"/><circle cx="48" cy="54" r="11" fill="#f8efeb"/><path d="M48 47v14m-4-11h6m-6 8h6" stroke="#b5656b" stroke-width="2.5"/><path d="M48 8v13m-6-6 6 6 6-6" fill="none" stroke="#927663" stroke-width="4" stroke-linecap="round"/></svg><div><h4>收入進來</h4><p>薪水、家用與其他收入入帳。</p></div></div><div class="order-arrow" aria-hidden="true">↓</div><div class="order-step"><svg viewBox="0 0 96 96" aria-hidden="true" class="order-icon"><path d="m12 44 36-29 36 29" fill="#dcb7aa" stroke="#b5656b" stroke-width="4" stroke-linejoin="round"/><path d="M23 41v39h50V41" fill="#fffaf5" stroke="#b5656b" stroke-width="4"/><rect x="42" y="55" width="15" height="25" rx="3" fill="#b5656b"/><path d="M29 51h8v10h-8zM61 51h7v10h-7z" fill="#dcb7aa"/></svg><div><h4>先付各種開銷</h4><p>帳單、採買、孩子的費用接著來。</p></div></div><div class="order-arrow" aria-hidden="true">↓</div><div class="order-step"><svg viewBox="0 0 96 96" aria-hidden="true" class="order-icon"><path d="M19 32q29 12 58 0l-7 48H26Z" fill="#f3e4df" stroke="#b58d8d" stroke-width="3"/><ellipse cx="48" cy="31" rx="29" ry="10" fill="#fffaf5" stroke="#b58d8d" stroke-width="3"/><path d="M37 55h22M42 65h12" stroke="#c9b0a7" stroke-width="3" stroke-linecap="round"/></svg><div><h4>剩多少，才存多少</h4><p>儲蓄排在最後，可能又沒有留下錢。</p></div></div><div class="order-ending">每筆開銷都顧到了，<br>卻可能忘了留給自己。</div></article><article class="order-story planned"><div class="order-eyebrow">試著換個用錢順序</div><h3>先安排，再按預算花</h3><div class="order-step"><svg viewBox="0 0 96 96" aria-hidden="true" class="order-icon"><rect x="14" y="25" width="68" height="46" rx="10" fill="#b5656b"/><path d="M14 38h68" stroke="#f8efeb" stroke-width="4"/><circle cx="48" cy="54" r="11" fill="#f8efeb"/><path d="M48 47v14m-4-11h6m-6 8h6" stroke="#b5656b" stroke-width="2.5"/><path d="M48 8v13m-6-6 6 6 6-6" fill="none" stroke="#927663" stroke-width="4" stroke-linecap="round"/></svg><div><h4>收入進來</h4><p>先看這個月實際有多少可用。</p></div></div><div class="order-arrow" aria-hidden="true">↓</div><div class="order-step"><svg viewBox="0 0 96 96" aria-hidden="true" class="order-icon"><rect x="8" y="24" width="23" height="48" rx="5" fill="#c68f96"/><rect x="36" y="24" width="23" height="48" rx="5" fill="#d5b995"/><rect x="64" y="24" width="23" height="48" rx="5" fill="#83a18e"/><path d="M15 36h9m19 0h9m19 0h9M15 43h9m19 0h9m19 0h9" stroke="#fffaf5" stroke-width="3" stroke-linecap="round"/><path d="M48 6v11m-6-5 6 6 6-6" fill="none" stroke="#b5656b" stroke-width="3"/></svg><div><h4>先替每筆錢分工</h4><p>安排必要生活費、帳單與預留款。</p></div></div><div class="order-arrow" aria-hidden="true">↓</div><div class="order-step"><svg viewBox="0 0 96 96" aria-hidden="true" class="order-icon"><rect x="18" y="16" width="60" height="67" rx="8" fill="#fffaf5" stroke="#b5656b" stroke-width="3"/><rect x="33" y="9" width="30" height="14" rx="5" fill="#dba4ab"/><path d="m28 38 5 5 8-10m-13 24 5 5 8-10" fill="none" stroke="#648773" stroke-width="4" stroke-linecap="round"/><path d="M49 39h18M49 58h18M28 73h39" stroke="#c6b4a8" stroke-width="3" stroke-linecap="round"/></svg><div><h4>照預算過生活</h4><p>知道哪些可以花、哪些已經有用途。</p></div></div><div class="order-arrow" aria-hidden="true">↓</div><div class="order-step"><svg viewBox="0 0 96 96" aria-hidden="true" class="order-icon"><circle cx="43" cy="42" r="24" fill="#fdf8ee" stroke="#b5656b" stroke-width="4"/><path d="m61 60 20 20" stroke="#b5656b" stroke-width="8" stroke-linecap="round"/><path d="M29 49v-9m13 9V30m13 19V35" stroke="#83a18e" stroke-width="7" stroke-linecap="round"/></svg><div><h4>每月檢查，再調整</h4><p>檢查結餘，慢慢找出能留下的空間。</p></div></div><div class="order-ending">讓每筆錢先有去處，<br>再看看能為未來留下多少。</div></article></div><p>你不是不努力存錢，可能只是一直把「留給自己」排在最後。</p><p>用錢順序不同，會影響這筆錢最後成為消費、儲蓄，還是投資。先配置不會讓錢憑空增加，但能讓每一筆錢有去處，也看見可以調整的空間。</p><div class="pos">必要生活費與近期要繳的帳單，仍要先確保足夠；不用為了投資，讓家庭生活更吃緊。</div></section>
+<section class="sec" id="budget-next"><span class="sec-tag">06 · 整理完，再聊下一步</span><h2>帶著你的收支<br><span class="g">從現況開始討論</span></h2><p>你已經把家庭收支整理出來了。接下來，你最想改變的是什麼？</p><p>是每月存不到錢、房貸壓力，還是不知道該怎麼安排剩下的金額？</p><p>加入官方 LINE，跟我說你最想釐清的一件事。我們從你的現況開始討論。是否分享摘要由你決定，不需要提供帳號或其他不必要的個資。</p><p class="budget-small">本表為收支整理與預算估算工具，不會自動辨識你的完整財務狀況。</p></section>
+
+  <!-- ═════ ③ 關於我：每一頁都一樣，不跟著乾貨改 ═════ -->
+  <section class="inst" id="institute">
+    <div class="kk">ABOUT · 張麥麥</div>
+    <h2>從全職媽媽開始<br><span class="g">走過 11 年網路銷售</span></h2>
+
+    <p class="lead">幫助想改變現況的人找對方向、用對工具</p>
+    <div class="founder">
+      <p>以前我是一位全職媽媽，第一筆訂單只有 30 元。也因為這筆訂單，開啟了我 11 年的網路銷售歷程。</p>
+      <p>目前，我同時擁有主動收入、被動收入與投資收入，也正在將財商教育、自媒體行銷、產品帶貨與未來的公益計畫串連。</p>
+    </div>
+
+
+<h3>我能幫你什麼</h3>
+    <div class="tools">
+      <div class="tool main"><div class="tn">現金流諮詢<em>主打</em></div><div class="td">協助你釐清現金流，以及想改變的財務現況。</div></div>
+      <div class="tool"><div class="tn">人生諮詢</div><div class="td">工作或家庭遇到困難，不知道如何解決，可以跟我聊聊。</div></div>
+      <div class="tool"><div class="tn">創業諮詢</div><div class="td">針對想要創業的人，討論你的想法與目前卡住的地方。</div></div>
+    </div>
+
+    <h3>你可能卡在這幾件事</h3>
+    <div class="qa">
+      <div class="q">為什麼要跟一個陌生人講這麼多私事？</div>
+      <div class="a">你可能會想，把不開心或財務上的私事告訴身邊的朋友，會不會比較安心？但熟悉一個人，不代表分享私事就沒有風險。<br><br>你可以把我當作一位業務人員，或是一位身心靈老師。我的人生經歷豐富，在判斷事情時以理性為主，也會考慮人的感受與情感。你可以先從願意分享的部分開始。</div>
+      <div class="q">我真的有辦法改變嗎？</div>
+      <div class="a">如果你一直停留在原地，現況就會改變嗎？<br><br>改變是從很小的地方開始。完全沒有開始，就等於停留在原地，而時間仍會往前，生活與財務成本也可能增加。<br><br>你覺得停留在原地比較安全，還是跨出一步去改變比較安全？</div>
+    </div>
+
+    <h3>適合這樣的人</h3>
+    <div class="fit">
+      <div class="f">想減輕買車買房壓力的人</div>
+      <div class="f">想活化手上資產的人</div>
+      <div class="f">領固定薪水想替自己加薪的人</div>
+    </div>
+
+    <div class="btn-wrap">
+      <a class="skbtn" href="https://lin.ee/oyxzdTj" target="_blank" rel="noopener">加入官方line我本人親回 →</a>
+      <div class="btn-note">從身無分文的全職媽媽，到現在擁有自己想要的生活，我比任何人都懂那份想要變好的期盼。</div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="fa">張麥麥 @mymy_0504</div>
+    <div class="fc">社群帳號：@mymy_0504<br>※ 文中個人成果不代表每個人都能有相同結果。</div>
+  </footer>
+
+</div>
+
+<script>
+// 複製：每個灰底框右上角的按鈕，複製同一框裡的文字
+document.querySelectorAll('.copy-btn').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    var txt = btn.parentElement.querySelector('pre').innerText;
+    function done(){ btn.textContent = '已複製'; setTimeout(function(){ btn.textContent = '複製'; }, 1800); }
+    function fallback(){ var t=document.createElement('textarea'); t.value=txt; document.body.appendChild(t); t.select(); try{document.execCommand('copy');}catch(e){} t.remove(); done(); }
+    if(navigator.clipboard){ navigator.clipboard.writeText(txt).then(done, fallback); } else { fallback(); }
+  });
+});
+
+// 頁內跳轉：不靠網址的 #，直接捲過去（預覽視窗、IG 內建瀏覽器裡 # 有時不會動）
+document.querySelectorAll('a[href^="#"]').forEach(function(link){
+  link.addEventListener('click', function(e){
+    var target = document.getElementById(link.getAttribute('href').slice(1));
+    if(!target) return;
+    e.preventDefault();
+    target.classList.add('vis');
+    target.scrollIntoView({behavior:'smooth', block:'start'});
+  });
+});
+
+// 搜尋：輸入關鍵字，只留下符合的卡片
+var find = document.getElementById('find');
+if(find){ find.addEventListener('input', function(){
+  var q = this.value.trim().toLowerCase(), n = 0;
+  document.querySelectorAll('a.card').forEach(function(c){ var ok = !q || c.textContent.toLowerCase().indexOf(q) >= 0; c.style.display = ok ? '' : 'none'; if(ok) n++; });
+  document.getElementById('empty').style.display = n ? 'none' : 'block';
+}); }
+
+// 懸浮按鈕：「關於我」出現在畫面上時收起，避免兩顆按鈕同時出現
+var fc = document.getElementById('float-cta');
+var inst = document.getElementById('institute');
+if(fc && inst && 'IntersectionObserver' in window){
+  new IntersectionObserver(function(es){
+    fc.classList.toggle('hide', es[0].isIntersecting);
+  }, {threshold:0.05}).observe(inst);
+}
+
+// 捲動淡入
+function reveal(){
+  var vh = window.innerHeight;
+  document.querySelectorAll('.fade:not(.vis)').forEach(function(el){
+    if(el.getBoundingClientRect().top < vh*0.94) el.classList.add('vis');
+  });
+}
+window.addEventListener('scroll', reveal, {passive:true});
+window.addEventListener('load', reveal);
+reveal();
+setTimeout(function(){ document.querySelectorAll('.fade').forEach(function(el){ el.classList.add('vis'); }); }, 2500);
+</script>
+
+<!--
+═══════════════════════════════════════════
+學員總覽頁模板（奇點研究所 × D11）
+═══════════════════════════════════════════
+· 這一份上傳時檔名一定是 index.html，網址打開就是它
+· 用兩層大括號包起來的地方都要換成自己的內容，換完不能留下任何一組
+· 自介卡、「關於我」、配色，跟落地頁用同一份資料
+· 每多一頁，在「卡片開始」下面加一張卡片，最新的放最上面；舊的卡片不要刪
+═══════════════════════════════════════════
+-->
+<script>
+(function(){
+'use strict';
+const KEY='mymy-family-budget-v1';
+const groups=[
+ {id:'income',title:'家庭收入',items:['我的收入','伴侶投入家用的金額','其他家庭成員投入的家用','補助、津貼與其他收入']},
+ {id:'home',title:'住家與帳單',items:['房租或房貸','水電瓦斯','管理費','電話網路']},
+ {id:'living',title:'日常生活',items:['伙食與採買','交通','醫療','生活用品']},
+ {id:'family',title:'孩子與家人',items:['學費','托育','補習','孩子用品','孝親費']},
+ {id:'debt',title:'保險與其他還款',items:['保費','車貸','其他貸款']},
+ {id:'reserve',title:'先留給未來的自己',items:['緊急備用金','儲蓄或家庭目標','已有的投資安排']}
+];
+function amount(v){const n=Number(v);return Number.isFinite(n)&&n>0?Math.min(n,1e10):0;}
+function calculate(rows){
+ const sums={income:0,home:0,living:0,family:0,debt:0,reserve:0};
+ rows.forEach(r=>{if(Object.hasOwn(sums,r.group))sums[r.group]+=amount(r.value)/([1,3,6,12].includes(Number(r.period))?Number(r.period):1);});
+ const expenses=sums.home+sums.living+sums.family+sums.debt;
+ return {...sums,expenses,balance:sums.income-expenses,available:sums.income-expenses-sums.reserve};
+}
+if(typeof module!=='undefined'&&module.exports){module.exports={calculate,amount};return;}
+const $=id=>document.getElementById(id);
+const money=n=>new Intl.NumberFormat('zh-TW',{maximumFractionDigits:0}).format(Math.round(Math.abs(n)));
+let state={month:new Date().getFullYear()+'-'+String(new Date().getMonth()+1).padStart(2,'0'),scope:'家用帳',rows:[],save:false};
+let serial=0;
+groups.forEach(g=>g.items.forEach(name=>state.rows.push({id:++serial,group:g.id,name,value:'',period:1,custom:false})));
+function cleanSaved(saved){
+ if(!saved||!Array.isArray(saved.rows)||saved.rows.length>250)throw Error('invalid');
+ const rows=saved.rows.filter(r=>groups.some(g=>g.id===r.group)).map((r,i)=>({id:i+1,group:r.group,name:String(r.name||'其他項目').slice(0,60),value:r.value===''?'':amount(r.value),period:[1,3,6,12].includes(Number(r.period))?Number(r.period):1,custom:!!r.custom}));
+ if(!rows.length)throw Error('empty');
+ return {month:/^\d{4}-\d{2}$/.test(saved.month)?saved.month:state.month,scope:saved.scope==='全家收支'?'全家收支':'家用帳',rows,save:true};
+}
+try{const saved=localStorage.getItem(KEY);if(saved){state=cleanSaved(JSON.parse(saved));serial=Math.max(...state.rows.map(r=>r.id));}}catch(e){$('save-status').textContent='無法讀取本機資料，本次仍可填寫。';}
+function persist(){
+ if(!state.save)return;
+ try{localStorage.setItem(KEY,JSON.stringify(state));$('save-status').textContent='已儲存在這台裝置的此瀏覽器。'}catch(e){$('save-status').textContent='儲存失敗，請先複製摘要備份；本次填寫仍可使用。';}
+}
+function make(tag,cls,text){const e=document.createElement(tag);if(cls)e.className=cls;if(text!==undefined)e.textContent=text;return e;}
+function renderRows(){
+ groups.forEach(g=>{
+  const host=$('rows-'+g.id);host.replaceChildren();
+  state.rows.filter(r=>r.group===g.id).forEach(r=>{
+   const box=make('div','budget-row');
+   const label=make('label','row-name',r.name);label.htmlFor='amount-'+r.id;
+   const input=make('input');input.id='amount-'+r.id;input.type='number';input.inputMode='decimal';input.min='0';input.max='10000000000';input.step='any';input.placeholder='0';input.value=r.value;input.setAttribute('aria-label',r.name+'金額（元）');
+   input.addEventListener('input',()=>{input.setCustomValidity(input.value!==''&&Number(input.value)<0?'請填寫零或正數':'');r.value=input.value;update();persist();});
+   const select=make('select');select.setAttribute('aria-label',r.name+'繳費或入帳週期');
+   [[1,'每月'],[3,'每季（3 個月）'],[6,'每半年'],[12,'每年']].forEach(([value,text])=>{const opt=make('option',null,text);opt.value=value;select.append(opt);});select.value=r.period;
+   select.addEventListener('change',()=>{r.period=Number(select.value);update();persist();});
+   const hint=make('div','monthly-hint');hint.id='hint-'+r.id;
+   box.append(label,input,select,hint);
+   if(r.custom){const remove=make('button','budget-text-button','移除此項');remove.type='button';remove.setAttribute('aria-label','移除'+r.name);remove.addEventListener('click',()=>{state.rows=state.rows.filter(x=>x.id!==r.id);renderRows();update();persist();});box.append(remove);}
+   host.append(box);
+  });
+ });
+}
+function update(){
+ const c=calculate(state.rows);const filled=state.rows.some(r=>amount(r.value)>0);const hasIncome=c.income>0;
+ $('total-income').textContent=money(c.income)+' 元';$('total-expenses').textContent=money(c.expenses)+' 元';
+ $('balance-title').textContent=c.balance<0?'目前收支缺口':'開銷後結餘';$('total-balance').textContent=(c.balance<0?'− ':'')+money(c.balance)+' 元';
+ $('available-title').textContent=c.available<0?'目前安排超出的金額':'可自由運用金額';$('total-available').textContent=(c.available<0?'− ':'')+money(c.available)+' 元';
+ $('total-reserve').textContent=money(c.reserve)+' 元';
+ $('budget-result').classList.toggle('is-negative',c.available<0);
+ $('result-message').textContent=!filled?'先填入收入與開銷，就能看見這個月的安排。':!hasIncome?'尚未填入收入，目前結果不完整。':c.balance<0?'目前支出與帳單預留已超過收入，先找出可以調整的項目。':c.available<0?'目前安排超過可用金額，可以先調整目標或支出，不需要勉強投入。':'這是完成上述安排後的剩餘金額；請確認沒有遺漏支出，再決定如何運用。';
+ $('budget-completeness').textContent=filled?'依你目前填寫的項目估算，未填項目以 0 計算。':'尚未填寫；這些數字不是你的收支結論。';
+ state.rows.forEach(r=>{const h=$('hint-'+r.id);if(h)h.textContent=Number(r.period)>1?'換算每月：約 '+money(amount(r.value)/r.period)+' 元（整筆金額 ÷ '+r.period+'）':'';});
+ const host=$('budget-chart');host.replaceChildren();
+ const items=[['必要支出與帳單預留',c.expenses,'expense'],['儲蓄與目標預留',c.reserve,'reserve'],['可自由運用',Math.max(0,c.available),'free']];
+ const base=Math.max(c.income,c.expenses+c.reserve,1);
+ items.forEach(([label,n,cls])=>{const row=make('div','chart-row');row.append(make('div','chart-caption',label+'｜'+money(n)+' 元'));const track=make('div','chart-track');const bar=make('span','chart-fill '+cls);bar.style.width=(Math.min(1,n/base)*100)+'%';track.append(bar);row.append(track);host.append(row);});
+ $('chart-note').textContent=!hasIncome?'填入收入後再比較；目前顯示已填項目的金額。':c.available<0?'支出與預留已超過收入。長條以目前總安排為基準，並非收入占比。':'長條以家庭總收入為基準。金額以新台幣估算，畫面四捨五入至元。';
+}
+function summary(){
+ const c=calculate(state.rows);return ['家庭收支管理摘要','月份：'+state.month,'記帳範圍：'+state.scope,'每月收入：'+money(c.income)+' 元','家庭支出與帳單預留：'+money(c.expenses)+' 元',(c.balance<0?'收支缺口：':'開銷後結餘：')+money(c.balance)+' 元','儲蓄、備用金與投資預留：'+money(c.reserve)+' 元',(c.available<0?'安排超出金額：':'可自由運用：')+money(c.available)+' 元','','已填項目（每月換算）：',...state.rows.filter(r=>amount(r.value)>0).map(r=>r.name+'：'+money(amount(r.value)/r.period)+' 元'),'','未填項目以 0 計算，非每月費用已換算每月預留。','我最想釐清的問題：【請填寫】'].join('\n');
+}
+renderRows();$('budget-month').value=state.month;$('budget-scope').value=state.scope;$('save-budget').checked=state.save;
+$('budget-month').addEventListener('change',e=>{if(e.target.value){state.month=e.target.value;persist();}});
+$('budget-scope').addEventListener('change',e=>{state.scope=e.target.value;persist();});
+$('save-budget').addEventListener('change',e=>{state.save=e.target.checked;if(state.save)persist();else{try{localStorage.removeItem(KEY);$('save-status').textContent='已關閉儲存並移除此瀏覽器中的備份；目前畫面仍保留。';}catch(e){$('save-status').textContent='無法移除備份，請從瀏覽器設定清除此網站資料。';}}});
+document.querySelectorAll('[data-add-group]').forEach(btn=>btn.addEventListener('click',()=>{const group=btn.dataset.addGroup;const field=$('new-'+group);const name=field.value.trim();if(!name){field.focus();return;}state.rows.push({id:++serial,group,name:name.slice(0,60),value:'',period:1,custom:true});field.value='';renderRows();update();persist();$('amount-'+serial).focus();}));
+$('copy-budget').addEventListener('click',async()=>{const text=summary();$('summary-output').value=text;$('summary-box').hidden=false;try{if(!navigator.clipboard)throw Error('clipboard');await navigator.clipboard.writeText(text);$('copy-status').textContent='已複製，可以貼到備忘錄；不會自動傳送給任何人。';}catch(e){$('summary-output').focus();$('summary-output').select();$('copy-status').textContent='請長按或選取下方摘要，再手動複製。';}});
+$('reset-budget').addEventListener('click',()=>{$('reset-confirm').hidden=false;});
+$('cancel-reset').addEventListener('click',()=>{$('reset-confirm').hidden=true;});
+$('confirm-reset').addEventListener('click',()=>{state.rows=state.rows.filter(r=>!r.custom).map(r=>({...r,value:'',period:1}));state.save=false;$('save-budget').checked=false;try{localStorage.removeItem(KEY);$('save-status').textContent='已清空填寫內容與本機備份。';}catch(e){$('save-status').textContent='畫面已清空，但本機備份無法移除，請清除此網站資料。';}renderRows();update();$('reset-confirm').hidden=true;$('summary-output').value='';$('summary-box').hidden=true;$('copy-status').textContent='';});
+update();if(state.save)$('save-status').textContent='已載入這台裝置的備份。月份只是這份表的標記，不會建立多月份帳本。';
+})();
+
+</script>
+</body>
+</html>
